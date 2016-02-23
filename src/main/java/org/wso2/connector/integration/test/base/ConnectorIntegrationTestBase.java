@@ -15,9 +15,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 /**
  * Integration Base package for ESB Cloud Connector.
- * v0.01
+ * v1.0.1
  */
 
 package org.wso2.connector.integration.test.base;
@@ -46,8 +47,12 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -78,6 +83,7 @@ import org.json.JSONObject;
 import org.testng.annotations.AfterClass;
 import org.w3c.dom.Document;
 import org.wso2.carbon.automation.api.clients.proxy.admin.ProxyServiceAdminClient;
+import org.wso2.carbon.automation.api.clients.sequences.SequenceAdminServiceClient;
 import org.wso2.carbon.automation.api.clients.utils.AuthenticateStub;
 import org.wso2.carbon.automation.core.ProductConstant;
 import org.wso2.carbon.automation.utils.axis2client.ConfigurationContextProvider;
@@ -86,6 +92,7 @@ import org.wso2.carbon.mediation.library.stub.MediationLibraryAdminServiceStub;
 import org.wso2.carbon.mediation.library.stub.upload.MediationLibraryUploaderStub;
 import org.wso2.carbon.mediation.library.stub.upload.types.carbon.LibraryFileItem;
 import org.wso2.carbon.proxyadmin.stub.ProxyServiceAdminProxyAdminException;
+import org.wso2.carbon.sequences.stub.types.SequenceEditorException;
 import org.xml.sax.SAXException;
 
 /**
@@ -111,6 +118,8 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     private String pathToProxiesDirectory;
     
     private String pathToRequestsDirectory;
+    
+    private String pathToSequencesDirectory;
     
     protected String proxyUrl;
     
@@ -170,7 +179,6 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
             
         }
         
-        
         adminServiceStub.updateStatus("{org.wso2.carbon.connector}" + connectorName, connectorName,
                 "org.wso2.carbon.connector", "enabled");
         
@@ -192,9 +200,40 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
                 }
             }
         }
+        String sequenceDirectoryRelativePath = connectorProperties.getProperty("sequenceDirectoryRelativePath");
+        // if sequence directory relative path is available in properties, add sequences to ESB
+        if (sequenceDirectoryRelativePath != null && !sequenceDirectoryRelativePath.isEmpty()) {
+            pathToSequencesDirectory = repoLocation + sequenceDirectoryRelativePath;
+            SequenceAdminServiceClient sequenceAdmin =
+                    new SequenceAdminServiceClient(esbServer.getBackEndUrl(), esbServer.getSessionCookie());
+            File sequenceFolder = new File(pathToSequencesDirectory);
+            File[] listOfSequenceFiles = sequenceFolder.listFiles();
+            for (int i = 0; i < listOfSequenceFiles.length; i++) {
+                if (listOfSequenceFiles[i].isFile()) {
+                    String fileName = listOfSequenceFiles[i].getName();
+                    if (fileName.endsWith(".xml") || fileName.endsWith(".XML")) {
+                        sequenceAdmin.addSequence(new DataHandler(new URL("file:///" + pathToSequencesDirectory
+                                + fileName)));
+                    }
+                }
+            }
+        }
         
         proxyUrl = getProxyServiceURL(connectorName);
         
+    }
+    
+    /**
+     * Method to upload sequences if required from a given path.
+     * 
+     * @throws XMLStreamException
+     * @throws IOException
+     * @throws SequenceEditorException
+     * @throws MalformedURLException
+     */
+    public void uploadSequences() throws MalformedURLException, SequenceEditorException, IOException,
+            XMLStreamException {
+    
     }
     
     /**
@@ -210,7 +249,8 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * Overloaded method for sendRestRequest, where the request file is not necessary.
+     * Overloaded method for {@link #sendJsonRestRequest(String, String, Map, String , Map)
+     * sendJsonRestRequest}, where the request file is not necessary.
      * 
      * @param endPoint String End point URL.
      * @param httpMethod String HTTP method type (GET, POST, PUT etc.).
@@ -226,10 +266,13 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * @param endPoint
-     * @param httpMethod
-     * @param headersMap
-     * @return
+     * Overloaded method for {@link #sendXmlRestRequest(String, String, Map, String , Map) sendXmlRestRequest}
+     * , where the request file is not necessary.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.).
+     * @param headersMap Map<String, String> Headers need to send to the end point .
+     * @return RestResponse object.
      * @throws XMLStreamException
      * @throws IOException
      */
@@ -240,7 +283,8 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * Overloaded method for sendRestRequest, where parameter replacement is not necessary.
+     * Overloaded method for {@link #sendJsonRestRequest(String, String, Map, String , Map)
+     * sendJsonRestRequest}, where parameter replacement is not necessary.
      * 
      * @param endPoint String End point URL.
      * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
@@ -257,11 +301,14 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * @param endPoint
-     * @param httpMethod
-     * @param headersMap
-     * @param requestFileName
-     * @return
+     * Overloaded method for {@link #sendXmlRestRequest(String, String, Map, String , Map) sendXmlRestRequest}
+     * , where parameter replacement is not necessary.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @return RestResponse object.
      * @throws XMLStreamException
      * @throws IOException
      */
@@ -272,14 +319,59 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * @param endPoint
-     * @param httpMethod
-     * @param headersMap
-     * @param requestFileName
-     * @param parametersMap
-     * @return
+     * Overloaded method for {@link #sendJsonRestRequestHTTPS(String, String, Map, String , Map, boolean)
+     * sendJsonRestRequestHTTPS}, where parameter replacement is not necessary.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return RestResponse object.
+     * @throws JSONException
      * @throws IOException
-     * @throws JSONException @
+     */
+    protected RestResponse<JSONObject> sendJsonRestRequestHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap)
+            throws IOException, JSONException {
+    
+        return sendJsonRestRequestHTTPS(endPoint, httpMethod, headersMap, requestFileName, parametersMap, false);
+    }
+    
+    /**
+     * Overloaded method for {@link #sendXmlRestRequestHTTPS(String, String, Map, String , Map, boolean)
+     * sendXmlRestRequestHTTPS}, where parameter replacement is not necessary.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return RestResponse object.
+     * @throws XMLStreamException
+     * @throws IOException
+     */
+    protected RestResponse<OMElement> sendXmlRestRequestHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap)
+            throws IOException, XMLStreamException {
+    
+        return this.sendXmlRestRequestHTTPS(endPoint, httpMethod, headersMap, requestFileName, parametersMap, false);
+    }
+    
+    /**
+     * Send HTTP request using {@link HttpURLConnection} in JSON format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return RestResponse object.
+     * @throws JSONException
+     * @throws IOException
      */
     protected RestResponse<JSONObject> sendJsonRestRequest(String endPoint, String httpMethod,
             Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap)
@@ -310,14 +402,60 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * @param endPoint
-     * @param httpMethod
-     * @param headersMap
-     * @param requestFileName
-     * @param parametersMap
-     * @return
+     * Send HTTP request to using {@link HttpsURLConnection} in JSON format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @param isIgnoreHostVerification boolean flag to ignore host verification.
+     * @return RestResponse object.
+     * @throws JSONException
      * @throws IOException
-     * @throws XMLStreamException @
+     */
+    protected RestResponse<JSONObject> sendJsonRestRequestHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap,
+            boolean isIgnoreHostVerification) throws IOException, JSONException {
+    
+        HttpsURLConnection httpsConnection =
+                writeRequestHTTPS(endPoint, httpMethod, RestResponse.JSON_TYPE, headersMap, requestFileName,
+                        parametersMap, isIgnoreHostVerification);
+        
+        String responseString = readResponseHTTPS(httpsConnection);
+        
+        RestResponse<JSONObject> restResponse = new RestResponse<JSONObject>();
+        restResponse.setHttpStatusCode(httpsConnection.getResponseCode());
+        restResponse.setHeadersMap(httpsConnection.getHeaderFields());
+        
+        if (responseString != null) {
+            JSONObject jsonObject = null;
+            if (isValidJSON(responseString)) {
+                jsonObject = new JSONObject(responseString);
+            } else {
+                jsonObject = new JSONObject();
+                jsonObject.put("output", responseString);
+            }
+            
+            restResponse.setBody(jsonObject);
+        }
+        
+        return restResponse;
+    }
+    
+    /**
+     * Send HTTP request using {@link HttpURLConnection} in XML format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return RestResponse
+     * @throws IOException
+     * @throws XMLStreamException
      */
     protected RestResponse<OMElement> sendXmlRestRequest(String endPoint, String httpMethod,
             Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap)
@@ -333,6 +471,51 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         restResponse.setHeadersMap(httpConnection.getHeaderFields());
         
         if (responseString != null) {
+            
+            if (!isValidXML(responseString)) {
+                responseString = "<output>" + responseString + "</output>";
+            }
+            
+            restResponse.setBody(AXIOMUtil.stringToOM(responseString));
+        }
+        
+        return restResponse;
+    }
+    
+    /**
+     * Send HTTP request using {@link HttpsURLConnection} in XML format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @param isIgnoreHostVerification boolean flag to ignore host verification.
+     * @return RestResponse
+     * @throws IOException
+     * @throws XMLStreamException
+     */
+    protected RestResponse<OMElement> sendXmlRestRequestHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap,
+            boolean isIgnoreHostVerification) throws IOException, XMLStreamException {
+    
+        HttpsURLConnection httpsConnection =
+                writeRequestHTTPS(endPoint, httpMethod, RestResponse.XML_TYPE, headersMap, requestFileName,
+                        parametersMap, isIgnoreHostVerification);
+        
+        String responseString = readResponseHTTPS(httpsConnection);
+        
+        RestResponse<OMElement> restResponse = new RestResponse<OMElement>();
+        restResponse.setHttpStatusCode(httpsConnection.getResponseCode());
+        restResponse.setHeadersMap(httpsConnection.getHeaderFields());
+        
+        if (responseString != null) {
+            
+            if (!isValidXML(responseString)) {
+                responseString = "<output>" + responseString + "</output>";
+            }
+            
             restResponse.setBody(AXIOMUtil.stringToOM(responseString));
         }
         
@@ -411,7 +594,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * Send a SOAP request via a MEPClient without attachments, taking a SOAP action. This method also takes
      * XPath expressions to evaluate the header and body sections of the request envelope.
      * 
-     * @param endpoint The URL of the endpoint to send the request to.
+     * @param endpoint The URL of the end point to send the request to.
      * @param soapRequestFileName Path to the SOAP request file
      * @param parametersMap A map containing key value pairs to be parameterized in the request.
      * @param action String describing the SOAP action.
@@ -472,7 +655,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * Send REST request and return RestResponse object.
+     * Send HTTP request using {@link HttpURLConnection} in JSON format to return {@link InputStream}.
      * 
      * @param endPoint String End point URL.
      * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
@@ -480,8 +663,89 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * @param requestFileName String File name of the file which contains request body data.
      * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
      *        properties file.
-     * @return RestResponse object.
-     * @throws IOException @
+     * @return InputStream
+     * @throws IOException
+     * @throws XMLStreamException
+     */
+    protected InputStream processForInputStream(String endPoint, String httpMethod, Map<String, String> headersMap,
+            String requestFileName, Map<String, String> parametersMap) throws IOException, JSONException {
+    
+        HttpURLConnection httpConnection =
+                writeRequest(endPoint, httpMethod, RestResponse.JSON_TYPE, headersMap, requestFileName, parametersMap);
+        
+        InputStream responseStream = null;
+        
+        if (httpConnection.getResponseCode() >= 400) {
+            responseStream = httpConnection.getErrorStream();
+        } else {
+            responseStream = httpConnection.getInputStream();
+        }
+        return responseStream;
+    }
+    
+    /**
+     * Overloaded method for {@link #processForInputStreamHTTPS(String, String, Map, String , Map, boolean)
+     * processForInputStreamHTTPS}, where parameter replacement is not necessary.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return InputStream
+     * @throws IOException
+     * @throws XMLStreamException
+     */
+    protected InputStream processForInputStreamHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap)
+            throws IOException, JSONException {
+    
+        return processForInputStreamHTTPS(endPoint, httpMethod, headersMap, requestFileName, parametersMap, false);
+    }
+    
+    /**
+     * Send HTTP request using {@link HttpURLConnection} in JSON format to return {@link InputStream}.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return InputStream
+     * @throws IOException
+     * @throws XMLStreamException
+     */
+    protected InputStream processForInputStreamHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap,
+            boolean isIgnoreHostVerification) throws IOException, JSONException {
+    
+        HttpsURLConnection httpsConnection =
+                writeRequestHTTPS(endPoint, httpMethod, RestResponse.JSON_TYPE, headersMap, requestFileName,
+                        parametersMap, isIgnoreHostVerification);
+        
+        InputStream responseStream = null;
+        
+        if (httpsConnection.getResponseCode() >= 400) {
+            responseStream = httpsConnection.getErrorStream();
+        } else {
+            responseStream = httpsConnection.getInputStream();
+        }
+        return responseStream;
+    }
+    
+    /**
+     * Write REST request to {@link HttpURLConnection}.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return {@link HttpURLConnection} object.
+     * @throws IOException
      */
     private HttpURLConnection writeRequest(String endPoint, String httpMethod, byte responseType,
             Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap)
@@ -532,6 +796,77 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
+     * Write REST request to {@link HttpsURLConnection}.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (GET, POST, PUT etc.)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param requestFileName String File name of the file which contains request body data.
+     * @param parametersMap Map<String, String> Additional parameters which is not predefined in the
+     *        properties file.
+     * @return {@link HttpsURLConnection} object.
+     * @throws IOException @
+     */
+    private HttpsURLConnection writeRequestHTTPS(String endPoint, String httpMethod, byte responseType,
+            Map<String, String> headersMap, String requestFileName, Map<String, String> parametersMap,
+            boolean isIgnoreHostVerification) throws IOException {
+    
+        String requestData = "";
+        
+        if (requestFileName != null && !requestFileName.isEmpty()) {
+            
+            requestData = loadRequestFromFile(requestFileName, parametersMap);
+            
+        } else if (responseType == RestResponse.JSON_TYPE) {
+            requestData = "{}";
+        }
+        OutputStream output = null;
+        
+        URL url = new URL(endPoint);
+        HttpsURLConnection httpsConnection = (HttpsURLConnection) url.openConnection();
+        // Disable automatic redirects
+        httpsConnection.setInstanceFollowRedirects(false);
+        httpsConnection.setRequestMethod(httpMethod);
+        
+        if (isIgnoreHostVerification) {
+            httpsConnection.setHostnameVerifier(new HostnameVerifier() {
+                
+                @Override
+                public boolean verify(String arg0, SSLSession arg1) {
+                
+                    return true;
+                }
+            });
+        }
+        
+        for (String key : headersMap.keySet()) {
+            httpsConnection.setRequestProperty(key, headersMap.get(key));
+        }
+        
+        if (httpMethod.equalsIgnoreCase("POST") || httpMethod.equalsIgnoreCase("PUT")) {
+            httpsConnection.setDoOutput(true);
+            try {
+                
+                output = httpsConnection.getOutputStream();
+                output.write(requestData.getBytes(Charset.defaultCharset()));
+                
+            } finally {
+                
+                if (output != null) {
+                    try {
+                        output.close();
+                    } catch (IOException logOrIgnore) {
+                        log.error("Error while closing the connection");
+                    }
+                }
+                
+            }
+        }
+        
+        return httpsConnection;
+    }
+    
+    /**
      * Load a request from a file, provided by a filename.
      * 
      * @param requestFileName The name of the file to load the request from.
@@ -561,11 +896,50 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * @param con
-     * @return
+     * Read response from {@link HttpURLConnection}
+     * 
+     * @param con HttpURLConnection.
+     * @return String content of the HTTP response.
      * @throws IOException
      */
     private String readResponse(HttpURLConnection con) throws IOException {
+    
+        InputStream responseStream = null;
+        String responseString = null;
+        
+        if (con.getResponseCode() >= 400) {
+            responseStream = con.getErrorStream();
+        } else {
+            responseStream = con.getInputStream();
+        }
+        
+        if (responseStream != null) {
+            
+            StringBuilder stringBuilder = new StringBuilder();
+            byte[] bytes = new byte[1024];
+            int len;
+            
+            while ((len = responseStream.read(bytes)) != -1) {
+                stringBuilder.append(new String(bytes, 0, len));
+            }
+            
+            if (!stringBuilder.toString().trim().isEmpty()) {
+                responseString = stringBuilder.toString();
+            }
+            
+        }
+        
+        return responseString;
+    }
+    
+    /**
+     * Read response from {@link HttpsURLConnection}
+     * 
+     * @param con HttpsURLConnection.
+     * @return String content of the HTTP response.
+     * @throws IOException
+     */
+    private String readResponseHTTPS(HttpsURLConnection con) throws IOException {
     
         InputStream responseStream = null;
         String responseString = null;
@@ -907,8 +1281,8 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     /**
      * Get connector configuration properties.
      * 
-     * @param connectorName
-     * @return
+     * @param connectorName Name of the connector to load properties.
+     * @return {@link Properties} object.
      */
     private Properties getConnectorConfigProperties(String connectorName) {
     
@@ -942,7 +1316,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     /**
      * Method to read in contents of a file as String
      * 
-     * @param path
+     * @param path file path.
      * @return String contents of file
      * @throws IOException
      */
@@ -968,10 +1342,10 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
     }
     
     /**
-     * Method to validate whether incomming string is parsable as JSON.
+     * Method to validate whether incoming string is parsable as JSON.
      * 
-     * @param json
-     * @return boolean
+     * @param json String to validate.
+     * @return boolean true if incoming JSON is valid, otherwise false.
      */
     private boolean isValidJSON(String json) {
     
@@ -981,6 +1355,25 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         } catch (JSONException ex) {
             return false;
         }
+    }
+    
+    /**
+     * Method to validate whether incoming string is parsable as XML.
+     * 
+     * @param xml String to validate.
+     * @return boolean true if incoming XML is valid, otherwise false.
+     */
+    private boolean isValidXML(String xml) {
+    
+        if (xml != null && xml.trim().length() > 0) {
+            if (xml.trim().startsWith("<")) {
+                
+                return true;
+            }
+            
+        }
+        
+        return false;
     }
     
     @Override
@@ -1011,22 +1404,6 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         return xPath.compile(xPathExpression).evaluate(xmlDocument);
     }
     
-    protected InputStream processForInputStream(String endPoint, String httpMethod, Map<String, String> headersMap,
-            String requestFileName, Map<String, String> parametersMap) throws IOException, JSONException {
-    
-        HttpURLConnection httpConnection =
-                writeRequest(endPoint, httpMethod, RestResponse.JSON_TYPE, headersMap, requestFileName, parametersMap);
-        
-        InputStream responseStream = null;
-        
-        if (httpConnection.getResponseCode() >= 400) {
-            responseStream = httpConnection.getErrorStream();
-        } else {
-            responseStream = httpConnection.getInputStream();
-        }
-        return responseStream;
-    }
-    
     /**
      * Execute xPath expression and return value as object.
      * 
@@ -1049,6 +1426,265 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         
         return xpath.evaluate(element);
     }
+    
+    /**
+     * Send HTTP request using {@link HttpURLConnection} in JSON format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (POST, PUT)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param fileName File name of the attachment to set as binary content.
+     * @return RestResponse object.
+     * @throws JSONException
+     * @throws IOException
+     */
+    protected RestResponse<JSONObject> sendBinaryContentForJsonResponse(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String fileName)
+            throws IOException, JSONException {
+    
+        HttpURLConnection httpConnection =
+                writeRequest(endPoint, httpMethod, RestResponse.JSON_TYPE, headersMap, fileName, true);
+        
+        String responseString = readResponse(httpConnection);
+        
+        RestResponse<JSONObject> restResponse = new RestResponse<JSONObject>();
+        restResponse.setHttpStatusCode(httpConnection.getResponseCode());
+        restResponse.setHeadersMap(httpConnection.getHeaderFields());
+        
+        if (responseString != null) {
+            JSONObject jsonObject = null;
+            if (isValidJSON(responseString)) {
+                jsonObject = new JSONObject(responseString);
+            } else {
+                jsonObject = new JSONObject();
+                jsonObject.put("output", responseString);
+            }
+            
+            restResponse.setBody(jsonObject);
+        }
+        
+        return restResponse;
+    }
+    
+    /**
+     * Send HTTP request using {@link HttpURLConnection} in XML format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (POST, PUT)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param fileName File name of the attachment to set as binary content.
+     * @return RestResponse object.
+     * @throws IOException
+     * @throws XMLStreamException 
+     */
+    protected RestResponse<OMElement> sendBinaryContentForXmlResponse(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String fileName)
+            throws IOException, XMLStreamException {
+    
+        HttpURLConnection httpConnection =
+                writeRequest(endPoint, httpMethod, RestResponse.XML_TYPE, headersMap, fileName, true);
+      
+        String responseString = readResponse(httpConnection);
+        
+        RestResponse<OMElement> restResponse = new RestResponse<OMElement>();
+        restResponse.setHttpStatusCode(httpConnection.getResponseCode());
+        restResponse.setHeadersMap(httpConnection.getHeaderFields());
+        
+        if (responseString != null) {
+    	  restResponse.setBody(AXIOMUtil.stringToOM(responseString));
+      	}
+        
+        return restResponse;
+    }
+    
+    /**
+     * Write REST request to {@link HttpURLConnection}.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTP method type (POST, PUT)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param fileName String File name of the attachment to set as binary content.
+     * @return {@link HttpURLConnection} object.
+     * @throws IOException
+     */
+    private HttpURLConnection writeRequest(String endPoint, String httpMethod, byte responseType,
+            Map<String, String> headersMap, String fileName, boolean isBinaryContent)
+            throws IOException {
+    
+        
+        OutputStream output = null;
+        
+        URL url = new URL(endPoint);
+        HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+        // Disable automatic redirects
+        httpConnection.setInstanceFollowRedirects(false);
+        httpConnection.setRequestMethod(httpMethod);
+        
+        //Create byte array to send binary attachment
+      	FileInputStream fileInputStream=null;
+        File file = new File(pathToResourcesDirectory,fileName);
+        byte[] byteArray = new byte[(int) file.length()];
+	    fileInputStream = new FileInputStream(file);
+	    fileInputStream.read(byteArray);
+	    fileInputStream.close();
+        
+        for (String key : headersMap.keySet()) {
+            httpConnection.setRequestProperty(key, headersMap.get(key));
+        }
+        
+        if (httpMethod.equalsIgnoreCase("POST") || httpMethod.equalsIgnoreCase("PUT")) {
+            httpConnection.setDoOutput(true);
+            try {
+                
+                output = httpConnection.getOutputStream();
+                output.write(byteArray);
+                
+            } finally {
+                
+                if (output != null) {
+                    try {
+                        output.close();
+                    } catch (IOException logOrIgnore) {
+                        log.error("Error while closing the connection");
+                    }
+                }
+                
+            }
+        }
+        
+        return httpConnection;
+    }
+        
+    /**
+     * Send HTTPS request using {@link HttpsURLConnection} in JSON format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpsMethod String HTTPS method type (POST, PUT)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param fileName File name of the attachment to set as binary content.
+     * @return RestResponse object.
+     * @throws JSONException
+     * @throws IOException
+     */
+    protected RestResponse<JSONObject> sendBinaryContentForJsonResponseHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String fileName)
+            throws IOException, JSONException {
+    
+        HttpsURLConnection httpsConnection =
+                writeRequestHTTPS(endPoint, httpMethod, RestResponse.JSON_TYPE, headersMap, fileName, true);
+        
+        String responseString = readResponse(httpsConnection);
+        
+        RestResponse<JSONObject> restResponse = new RestResponse<JSONObject>();
+        restResponse.setHttpStatusCode(httpsConnection.getResponseCode());
+        restResponse.setHeadersMap(httpsConnection.getHeaderFields());
+        
+        if (responseString != null) {
+            JSONObject jsonObject = null;
+            if (isValidJSON(responseString)) {
+                jsonObject = new JSONObject(responseString);
+            } else {
+                jsonObject = new JSONObject();
+                jsonObject.put("output", responseString);
+            }
+            
+            restResponse.setBody(jsonObject);
+        }
+        
+        return restResponse;
+    }
+    
+    /**
+     * Send HTTPS request using {@link HttpsURLConnection} in XML format.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpMethod String HTTPS method type (POST, PUT)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param fileName File name of the attachment to set as binary content.
+     * @return RestResponse object.
+     * @throws IOException
+     * @throws XMLStreamException 
+     */
+    protected RestResponse<OMElement> sendBinaryContentForXmlResponseHTTPS(String endPoint, String httpMethod,
+            Map<String, String> headersMap, String fileName)
+            throws IOException, XMLStreamException {
+    
+        HttpsURLConnection httpsConnection =
+                writeRequestHTTPS(endPoint, httpMethod, RestResponse.XML_TYPE, headersMap, fileName, true);
+      
+        String responseString = readResponse(httpsConnection);
+        
+        RestResponse<OMElement> restResponse = new RestResponse<OMElement>();
+        restResponse.setHttpStatusCode(httpsConnection.getResponseCode());
+        restResponse.setHeadersMap(httpsConnection.getHeaderFields());
+        
+        if (responseString != null) {
+    	  restResponse.setBody(AXIOMUtil.stringToOM(responseString));
+      	}
+        
+        return restResponse;
+    }
+    
+    /**
+     * Write REST request to {@link HttpsURLConnection}.
+     * 
+     * @param endPoint String End point URL.
+     * @param httpsMethod String HTTP method type (POST, PUT)
+     * @param headersMap Map<String, String> Headers need to send to the end point.
+     * @param fileName String File name of the attachment to set as binary content.
+     * @return {@link HttpsURLConnection} object.
+     * @throws IOException
+     */
+    private HttpsURLConnection writeRequestHTTPS(String endPoint, String httpMethod, byte responseType,
+            Map<String, String> headersMap, String fileName, boolean isBinaryContent)
+            throws IOException {
+    
+        
+        OutputStream output = null;
+        
+        URL url = new URL(endPoint);
+        HttpsURLConnection httpsConnection = (HttpsURLConnection) url.openConnection();
+        // Disable automatic redirects
+        httpsConnection.setInstanceFollowRedirects(false);
+        httpsConnection.setRequestMethod(httpMethod);
+        
+        //Create byte array to send binary attachment
+      	FileInputStream fileInputStream=null;
+        File file = new File(pathToResourcesDirectory,fileName);
+        byte[] byteArray = new byte[(int) file.length()];
+	    fileInputStream = new FileInputStream(file);
+	    fileInputStream.read(byteArray);
+	    fileInputStream.close();
+        
+        for (String key : headersMap.keySet()) {
+            httpsConnection.setRequestProperty(key, headersMap.get(key));
+        }
+        
+        if (httpMethod.equalsIgnoreCase("POST") || httpMethod.equalsIgnoreCase("PUT")) {
+            httpsConnection.setDoOutput(true);
+            try {
+                
+                output = httpsConnection.getOutputStream();
+                output.write(byteArray);
+                
+            } finally {
+                
+                if (output != null) {
+                    try {
+                        output.close();
+                    } catch (IOException logOrIgnore) {
+                        log.error("Error while closing the connection");
+                    }
+                }
+                
+            }
+        }
+        
+        return httpsConnection;
+    }
+    
+   
+    
     
     /**
      * Inner class to handle Multipart data

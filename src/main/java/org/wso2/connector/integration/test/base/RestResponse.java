@@ -36,27 +36,33 @@ public class RestResponse<T> {
     
     private T body;
     
-	public int getHttpStatusCode() {
+    public int getHttpStatusCode() {
+    
         return httpStatusCode;
     }
     
     public void setHttpStatusCode(int httpStatusCode) {
+    
         this.httpStatusCode = httpStatusCode;
     }
     
     public Map<String, List<String>> getHeadersMap() {
+    
         return headersMap;
     }
     
     public void setHeadersMap(Map<String, List<String>> headersMap) {
+    
         this.headersMap = headersMap;
     }
     
     public T getBody() {
-		return body;
-	}
-
-	public void setBody(T body) {
-		this.body = body;
-	}    
+    
+        return body;
+    }
+    
+    public void setBody(T body) {
+    
+        this.body = body;
+    }
 }
