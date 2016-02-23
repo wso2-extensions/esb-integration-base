@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *  Copyright (c) 2005-2010, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  *  WSO2 Inc. licenses this file to you under the Apache License,
  *  Version 2.0 (the "License"); you may not use this file except
@@ -36,27 +36,33 @@ public class RestResponse<T> {
     
     private T body;
     
-	public int getHttpStatusCode() {
+    public int getHttpStatusCode() {
+    
         return httpStatusCode;
     }
     
     public void setHttpStatusCode(int httpStatusCode) {
+    
         this.httpStatusCode = httpStatusCode;
     }
     
     public Map<String, List<String>> getHeadersMap() {
+    
         return headersMap;
     }
     
     public void setHeadersMap(Map<String, List<String>> headersMap) {
+    
         this.headersMap = headersMap;
     }
     
     public T getBody() {
-		return body;
-	}
-
-	public void setBody(T body) {
-		this.body = body;
-	}    
+    
+        return body;
+    }
+    
+    public void setBody(T body) {
+    
+        this.body = body;
+    }
 }
