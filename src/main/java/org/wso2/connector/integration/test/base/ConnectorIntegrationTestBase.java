@@ -25,11 +25,13 @@ package org.wso2.connector.integration.test.base;
 
 import java.beans.XMLDecoder;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -914,19 +916,21 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         }
         
         if (responseStream != null) {
-            
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(responseStream));
+
             StringBuilder stringBuilder = new StringBuilder();
-            byte[] bytes = new byte[1024];
+            char[] chars = new char[1024];
             int len;
             
-            while ((len = responseStream.read(bytes)) != -1) {
-                stringBuilder.append(new String(bytes, 0, len));
+            while ((len = bufferedReader.read(chars)) != -1) {
+                stringBuilder.append(new String(chars, 0, len));
             }
             
             if (!stringBuilder.toString().trim().isEmpty()) {
                 responseString = stringBuilder.toString();
             }
-            
+
         }
         
         return responseString;
