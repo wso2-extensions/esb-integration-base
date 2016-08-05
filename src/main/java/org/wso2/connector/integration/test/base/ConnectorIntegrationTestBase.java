@@ -955,13 +955,15 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         }
         
         if (responseStream != null) {
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(responseStream));
             
             StringBuilder stringBuilder = new StringBuilder();
-            byte[] bytes = new byte[1024];
+            char[] chars = new char[1024];
             int len;
             
-            while ((len = responseStream.read(bytes)) != -1) {
-                stringBuilder.append(new String(bytes, 0, len));
+            while ((len = bufferedReader.read(chars)) != -1) {
+                stringBuilder.append(new String(chars, 0, len));
             }
             
             if (!stringBuilder.toString().trim().isEmpty()) {
