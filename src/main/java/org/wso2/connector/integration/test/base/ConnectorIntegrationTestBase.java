@@ -14,17 +14,10 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- * <p>
- * Integration Base package for ESB Cloud Connector.
- * v1.0.1
- * <p>
- * Integration Base package for ESB Cloud Connector.
- * v1.0.1
  */
 
 /**
  * Integration Base package for ESB Cloud Connector.
- * v1.0.1
  */
 
 package org.wso2.connector.integration.test.base;
