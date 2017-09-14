@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
-   Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+   Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
 
    WSO2 Inc. licenses this file to you under the Apache License,
    Version 2.0 (the "License"); you may not use this file except
@@ -19,71 +18,103 @@
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.wso2.esb.integration</groupId>
-	<artifactId>integration-base</artifactId>
-	<version>1.0.2-SNAPSHOT</version>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.wso2.esb.integration</groupId>
+    <artifactId>integration-base</artifactId>
+    <version>1.0.2-SNAPSHOT</version>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.wso2.carbon</groupId>
-			<artifactId>org.wso2.carbon.proxyadmin.stub</artifactId>
-			<version>4.2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.wso2.esb</groupId>
-			<artifactId>org.wso2.carbon.esb.common</artifactId>
-			<version>4.8.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.wso2.carbon.automation</groupId>
-			<artifactId>org.wso2.carbon.automation.core</artifactId>
-			<version>${test.framework.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.wso2.carbon.automation</groupId>
-			<artifactId>org.wso2.carbon.automation.api</artifactId>
-			<version>${test.framework.version}</version>
-
-		</dependency>
-		<dependency>
-			<groupId>org.wso2.carbon.automation</groupId>
-			<artifactId>org.wso2.carbon.automation.utils</artifactId>
-			<version>${test.framework.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.wso2.carbon</groupId>
-			<artifactId>org.wso2.carbon.mediation.library.stub</artifactId>
-			<version>${carbon.platform.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>javax.servlet</groupId>
-					<artifactId>servlet-api</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.json.wso2</groupId>
-			<artifactId>json</artifactId>
-			<version>2.0.0.wso2v1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.axis2</groupId>
-			<artifactId>axis2-kernel</artifactId>
-			<version>${axis2.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.testng</groupId>
-			<artifactId>testng</artifactId>
-			<version>6.1.1</version>
-		</dependency>
-	</dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.wso2.carbon.automation</groupId>
+            <artifactId>org.wso2.carbon.automation.extensions</artifactId>
+            <version>${automation.framework.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.jmeter</groupId>
+                    <artifactId>ApacheJMeter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.jmeter</groupId>
+                    <artifactId>ApacheJMeter_core</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.automationutils</groupId>
+            <artifactId>org.wso2.carbon.integration.common.admin.client</artifactId>
+            <version>${automation.framework.utils.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.automationutils</groupId>
+            <artifactId>org.wso2.carbon.integration.common.extensions</artifactId>
+            <version>${automation.framework.utils.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.automationutils</groupId>
+            <artifactId>org.wso2.carbon.integration.common.utils</artifactId>
+            <version>${automation.framework.utils.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.automationutils</groupId>
+            <artifactId>org.wso2.carbon.integration.common.tests</artifactId>
+            <version>${automation.framework.utils.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.mediation</groupId>
+            <artifactId>org.wso2.carbon.connector.core</artifactId>
+            <version>${carbon.mediation.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.ei</groupId>
+            <artifactId>integration-test-utils</artifactId>
+            <version>${product.ei.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.ei</groupId>
+            <artifactId>automation-extensions</artifactId>
+            <version>${product.ei.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon</groupId>
+            <artifactId>org.wso2.carbon.authenticator.stub</artifactId>
+            <version>${carbon.kernel.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.automation</groupId>
+            <artifactId>org.wso2.carbon.automation.test.utils</artifactId>
+            <version>${automation.framework.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.json.wso2</groupId>
+            <artifactId>json</artifactId>
+            <version>${json.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.mediation</groupId>
+            <artifactId>org.wso2.carbon.mediation.library.stub</artifactId>
+            <version>${carbon.mediation.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.automation</groupId>
+            <artifactId>org.wso2.carbon.automation.engine</artifactId>
+            <version>${automation.framework.version}</version>
+        </dependency>
+    </dependencies>
     <scm>
         <connection>scm:git:https://github.com/wso2-extensions/esb-integration-base.git</connection>
         <url>https://github.com/wso2-extensions/esb-integration-base.git</url>
         <developerConnection>scm:git:https://github.com/wso2-extensions/esb-integration-base</developerConnection>
         <tag>HEAD</tag>
-    </scm>	
+    </scm>
     <build>
 
         <extensions>
@@ -153,9 +184,6 @@
                     <extensions>true</extensions>
                     <configuration>
                         <obrRepository>NONE</obrRepository>
-                        <!--<instructions>
-                          <_include>-osgi.bnd</_include>
-                        </instructions>-->
                     </configuration>
                 </plugin>
                 <plugin>
@@ -183,15 +211,17 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-    </build>	
+    </build>
     <properties>
-	<test.framework.version>${carbon.platform.version}</test.framework.version>
-	<esb.version>4.8.1</esb.version>
-	<carbon.platform.version>4.2.0</carbon.platform.version>
-	<emma.version>2.1.5320</emma.version>
-	<json.version>2.0</json.version>
-	<axis2.version>1.6.2</axis2.version>
-    </properties>	
+        <carbon.kernel.version>4.4.17</carbon.kernel.version>
+        <carbon.mediation.version>4.6.23</carbon.mediation.version>
+        <emma.version>2.1.5320</emma.version>
+        <json.version>2.0.0.wso2v1</json.version>
+        <testng.version>6.1.1</testng.version>
+        <automation.framework.version>4.4.3</automation.framework.version>
+        <automation.framework.utils.version>4.4.2</automation.framework.utils.version>
+        <product.ei.version>6.1.1</product.ei.version>
+    </properties>
     <pluginRepositories>
         <pluginRepository>
             <id>wso2.releases</id>
@@ -225,7 +255,7 @@
                 <checksumPolicy>ignore</checksumPolicy>
             </releases>
         </pluginRepository>
-    </pluginRepositories>	
+    </pluginRepositories>
     <repositories>
         <repository>
             <id>wso2-nexus</id>
@@ -271,5 +301,5 @@
             <name>Apache Snapshot Repository</name>
             <url>http://maven.wso2.org/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>
-    </distributionManagement>	
+    </distributionManagement>
 </project>
