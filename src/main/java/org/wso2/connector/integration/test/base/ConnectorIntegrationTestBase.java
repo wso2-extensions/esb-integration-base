@@ -88,8 +88,6 @@ import org.wso2.carbon.automation.engine.frameworkutils.FrameworkPathUtil;
 import org.wso2.esb.integration.common.clients.client.utils.AuthenticateStub;
 import org.wso2.esb.integration.common.clients.sequences.SequenceAdminServiceClient;
 import org.wso2.esb.integration.common.utils.ESBIntegrationTest;
-
-
 import org.wso2.carbon.mediation.library.stub.MediationLibraryAdminServiceStub;
 import org.wso2.esb.integration.common.utils.clients.axis2client.ConfigurationContextProvider;
 import org.wso2.carbon.proxyadmin.stub.ProxyServiceAdminProxyAdminException;
@@ -158,13 +156,11 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
 
             String[] libraries = mediationLibraryAdminServiceStub.getAllLibraries();
             if (Arrays.asList(libraries).contains("{org.wso2.carbon.connector}" + connectorName)) {
-                log.info("Connector upload is complete");
                 break;
             } else {
                 log.info("Connector upload incomplete. Waiting...");
                 sleepTimer *= SLEEP_TIMER_PROGRESSION_FACTOR;
             }
-
         }
         updateConnectorStatus("{org.wso2.carbon.connector}" + connectorName, connectorName,
                 "org.wso2.carbon.connector", "enabled");
