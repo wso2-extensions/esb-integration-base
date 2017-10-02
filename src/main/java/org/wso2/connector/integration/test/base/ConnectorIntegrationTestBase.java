@@ -169,6 +169,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         String resourceLocation = FrameworkPathUtil.getSystemResourceLocation();
         pathToProxiesDirectory = resourceLocation + connectorProperties.getProperty("proxyDirectoryRelativePath");
         pathToRequestsDirectory = resourceLocation + connectorProperties.getProperty("requestDirectoryRelativePath");
+        pathToResourcesDirectory = resourceLocation + connectorProperties.getProperty("resourceDirectoryRelativePath");
 
         File folder = new File(pathToProxiesDirectory);
         File[] listOfFiles = folder.listFiles();
