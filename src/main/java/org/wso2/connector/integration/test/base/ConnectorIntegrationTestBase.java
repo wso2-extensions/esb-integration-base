@@ -29,7 +29,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,8 +39,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.rmi.RemoteException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -90,7 +87,6 @@ import org.apache.axis2.context.ConfigurationContext;
 import org.apache.axis2.context.MessageContext;
 import org.apache.axis2.transport.TransportUtils;
 import org.apache.axis2.wsdl.WSDLConstants;
-import org.apache.commons.lang.StringUtils;
 import org.jaxen.JaxenException;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -233,82 +229,92 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
 
     }
 
-    public void restart() throws AutomationUtilException, XPathExpressionException, MalformedURLException {
+    public static void restartGracefully() throws AutomationUtilException, XPathExpressionException,
+            MalformedURLException {
         new ServerConfigurationManager("ESB", TestUserMode.SUPER_TENANT_ADMIN).restartGracefully();
     }
 
     /**
-     * Method to add the certificates to the keystore.
+     * Retrieve the certificates and add them to the keyStore.
      *
-     * @param keyStore Name of the keystore/
-     * @param certName Name of the certificate.
-     * @param password Keystore password.
-     * @param alias Certificate alias.
-     * @param isCopy Whether to copy the keystores to test folder.
+     * @param keyStore The name of the keyStore.
+     * @param password The password of the keyStore.
+     * @throws CertificateException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyStoreException
+     * @throws IOException
+     */
+    public static void addCertificatesToEIKeyStore(String keyStore, String password) throws CertificateException,
+            NoSuchAlgorithmException, KeyStoreException, IOException {
+
+        String keyStorePath = System.getProperty(IntegrationBaseConstants.CARBON_HOME) + File.separator +
+                IntegrationBaseConstants.REPOSITORY + File.separator + IntegrationBaseConstants.RESOURCES +
+                File.separator + IntegrationBaseConstants.SECURITY + File.separator + keyStore;
+
+        addCertificates(keyStorePath, password);
+    }
+
+    /**
+     * Retrieve the certificates and add them to the keyStore.
+     *
+     * @param keyStore The name of the keyStore.
+     * @param password The password of the keyStore.
+     * @throws CertificateException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyStoreException
+     * @throws IOException
+     */
+    public static void addCertificatesToTestKeyStore(String keyStore, String password) throws
+            CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+
+        String keyStorePath = System.getProperty(IntegrationBaseConstants.BASE_DIR, ".") + File.separator +
+                IntegrationBaseConstants.SRC + File.separator + IntegrationBaseConstants.TEST + File.separator +
+                IntegrationBaseConstants.RESOURCES + File.separator + IntegrationBaseConstants.KEYSTORES +
+                File.separator + IntegrationBaseConstants.PRODUCTS + File.separator + keyStore;
+
+        addCertificates(keyStorePath, password);
+    }
+
+    /**
+     * Add provided certificates to the key store.
+     *
+     * @param keyStorePath The key store path.
+     * @param password The path.
      * @throws IOException
      * @throws KeyStoreException
      * @throws CertificateException
      * @throws NoSuchAlgorithmException
      */
-    public void addCertificate(String keyStore, String certName, String password, String alias, boolean isCopy) throws
-            IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
+    private static void addCertificates(String keyStorePath, String password) throws IOException, KeyStoreException,
+            CertificateException, NoSuchAlgorithmException {
 
-        if (StringUtils.isNotEmpty(certName)) {
-            String keyStorePath = System.getProperty("carbon.home") + File.separator + "repository" + File.separator +
-                    "resources" + File.separator + "security" + File.separator + keyStore;
+        String certLocation = System.getProperty(IntegrationBaseConstants.BASE_DIR, ".") + File.separator +
+                IntegrationBaseConstants.REPOSITORY + File.separator;
 
-            String certPath = System.getProperty("basedir", ".") + File.separator + "repository" +
-                    File.separator + certName;
-
-            KeyStore keystore;
-            char[] storePassword;
-            CertificateFactory cf;
-            InputStream certstream;
-            Certificate certs;
-            File keystoreFile;
-            FileInputStream in;
-            FileOutputStream out;
-            try (FileInputStream is = new FileInputStream(keyStorePath)) {
-                keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-                keystore.load(is, password.toCharArray());
-            }
-
-            storePassword = password.toCharArray();
-
-            cf = CertificateFactory.getInstance("X.509");
-            certstream = fullStream(certPath);
-            certs = cf.generateCertificate(certstream);
-
-            keystoreFile = new File(keyStorePath);
-
-            // Load the keystore contents
-            in = new FileInputStream(keystoreFile);
-            keystore.load(in, storePassword);
-            in.close();
-
-            // Add the certificate
-            keystore.setCertificateEntry(alias, certs);
-
-            // Save the new keystore contents
-            out = new FileOutputStream(keystoreFile);
-            keystore.store(out, storePassword);
-            out.close();
-
-            if (isCopy) {
-                String destPath = System.getProperty("basedir", ".") + File.separator + "src" + File.separator +
-                        "test" + File.separator + "resources" + File.separator + "keystores" + File.separator +
-                        "products" + File.separator + keyStore;
-                Files.copy(new File(keyStorePath).toPath(), new File(destPath).toPath(),
-                        StandardCopyOption.REPLACE_EXISTING);
+        String alias = System.getProperty(IntegrationBaseConstants.CONNECTOR_NAME);
+        File folder = new File(certLocation);
+        File[] listOfFiles = folder.listFiles();
+        String certPath;
+        String certAlias;
+        if (listOfFiles != null) {
+            for (File listOfFile : listOfFiles) {
+                if (listOfFile.isFile()) {
+                    String fileName = listOfFile.getName();
+                    if (fileName.endsWith(".crt") || fileName.endsWith(".cer")) {
+                        certPath = certLocation + fileName;
+                        certAlias = alias + System.currentTimeMillis();
+                        addCertificate(keyStorePath, certPath, password, certAlias);
+                    }
+                }
             }
         }
     }
 
     /**
-     * Method to add the certificates to the keystore.
+     * Method to add the certificate to the keystore.
      *
-     * @param keyStore Name of the keystore/
-     * @param certName Name of the certificate.
+     * @param keyStorePath Path of the keystore.
+     * @param certPath Path of the certificate.
      * @param password Keystore password.
      * @param alias Certificate alias.
      * @throws IOException
@@ -316,43 +322,31 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * @throws CertificateException
      * @throws NoSuchAlgorithmException
      */
-    public void addCertificateToTest(String keyStore, String certName, String password, String alias) throws
+    public static void addCertificate(String keyStorePath, String certPath, String password, String alias) throws
             IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
 
-        if (StringUtils.isNotEmpty(certName)) {
-
-            String keyStorePath = System.getProperty("basedir", ".") + File.separator + "target" + File.separator +
-                    "test-classes" +  File.separator + "keystores" + File.separator +
-                    "products" + File.separator + keyStore;
-
-            String certPath = System.getProperty("basedir", ".") + File.separator + "repository" +
-                    File.separator + certName;
-
-            KeyStore keystore;
-            char[] storePassword;
-            CertificateFactory cf;
-            InputStream certstream;
-            Certificate certs;
-            File keystoreFile;
-            FileInputStream in;
-            FileOutputStream out;
-            try (FileInputStream is = new FileInputStream(keyStorePath)) {
-                keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-                keystore.load(is, password.toCharArray());
-            }
+        KeyStore keystore;
+        char[] storePassword;
+        CertificateFactory cf;
+        InputStream certStream;
+        Certificate certs;
+        File keystoreFile;
+        FileInputStream in = null;
+        FileOutputStream out = null;
+        try (FileInputStream is = new FileInputStream(keyStorePath)) {
+            keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keystore.load(is, password.toCharArray());
 
             storePassword = password.toCharArray();
-
             cf = CertificateFactory.getInstance("X.509");
-            certstream = fullStream(certPath);
-            certs = cf.generateCertificate(certstream);
+            certStream = fullStream(certPath);
+            certs = cf.generateCertificate(certStream);
 
             keystoreFile = new File(keyStorePath);
 
             // Load the keystore contents
             in = new FileInputStream(keystoreFile);
             keystore.load(in, storePassword);
-            in.close();
 
             // Add the certificate
             keystore.setCertificateEntry(alias, certs);
@@ -360,7 +354,14 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
             // Save the new keystore contents
             out = new FileOutputStream(keystoreFile);
             keystore.store(out, storePassword);
-            out.close();
+
+        } finally {
+            if (in != null) {
+                in.close();
+            }
+            if (out != null) {
+                out.close();
+            }
         }
     }
 
@@ -381,29 +382,19 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      */
     public void getApiConfigProperties() {
 
-        String apiConfigFile;
-        try {
-            apiConfigFile = System.getProperty("basedir", ".") + File.separator + "repository" +
-                    File.separator +"esb-connector-"+ connectorName + ".properties";
+        String apiConfigFile = System.getProperty(IntegrationBaseConstants.BASE_DIR, ".") + File.separator +
+                IntegrationBaseConstants.REPOSITORY + File.separator + IntegrationBaseConstants.ESB_CONNECTOR +
+                connectorName + IntegrationBaseConstants.PROPERTIES;
 
-            File connectorPropertyFile = new File(apiConfigFile);
-            InputStream inputStream = null;
-            if (connectorPropertyFile.exists()) {
-                inputStream = new FileInputStream(connectorPropertyFile);
+        try (InputStream inputStream = new FileInputStream(new File(apiConfigFile))) {
+            Properties prop = new Properties();
+            prop.load(inputStream);
+            Object key;
+            Enumeration enums = prop.propertyNames();
+            while (enums.hasMoreElements()) {
+                key = enums.nextElement();
+                connectorProperties.put(key, prop.getProperty(key.toString()));
             }
-
-            if (inputStream != null) {
-                Properties prop = new Properties();
-                prop.load(inputStream);
-                inputStream.close();
-                Enumeration<String> enums = (Enumeration<String>) prop.propertyNames();
-                while (enums.hasMoreElements()) {
-                    String key = enums.nextElement();
-                    String value = prop.getProperty(key);
-                    connectorProperties.put(key, value);
-                }
-            }
-
         } catch (IOException ignored) {
             log.error("Api config properties file not found, please check your configuration");
         }
