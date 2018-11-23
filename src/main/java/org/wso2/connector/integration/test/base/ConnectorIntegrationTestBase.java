@@ -300,7 +300,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
             for (File listOfFile : listOfFiles) {
                 if (listOfFile.isFile()) {
                     String fileName = listOfFile.getName();
-                    if (fileName.endsWith(".crt") || fileName.endsWith(".cer")) {
+                    if (fileName.endsWith(".crt") || fileName.endsWith(".cer") || fileName.endsWith(".pem")) {
                         certPath = certLocation + fileName;
                         certAlias = alias + System.currentTimeMillis();
                         addCertificate(keyStorePath, certPath, password, certAlias);
