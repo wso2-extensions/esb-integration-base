@@ -87,12 +87,14 @@ import org.apache.axis2.context.ConfigurationContext;
 import org.apache.axis2.context.MessageContext;
 import org.apache.axis2.transport.TransportUtils;
 import org.apache.axis2.wsdl.WSDLConstants;
+import org.apache.commons.io.FileUtils;
 import org.jaxen.JaxenException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.testng.annotations.AfterClass;
 import org.w3c.dom.Document;
 
+import org.wso2.carbon.automation.engine.context.AutomationContext;
 import org.wso2.carbon.automation.engine.context.TestUserMode;
 import org.wso2.carbon.automation.engine.frameworkutils.FrameworkPathUtil;
 import org.wso2.carbon.integration.common.utils.exceptions.AutomationUtilException;
@@ -101,9 +103,11 @@ import org.wso2.esb.integration.common.clients.sequences.SequenceAdminServiceCli
 import org.wso2.esb.integration.common.utils.ESBIntegrationTest;
 import org.wso2.carbon.integration.common.utils.mgt.ServerConfigurationManager;
 import org.wso2.carbon.mediation.library.stub.MediationLibraryAdminServiceStub;
+import org.wso2.esb.integration.common.utils.ESBTestCaseUtils;
 import org.wso2.esb.integration.common.utils.clients.axis2client.ConfigurationContextProvider;
 import org.wso2.carbon.proxyadmin.stub.ProxyServiceAdminProxyAdminException;
 import org.wso2.carbon.sequences.stub.types.SequenceEditorException;
+import org.wso2.esb.integration.common.utils.clients.stockquoteclient.StockQuoteClient;
 import org.xml.sax.SAXException;
 
 /**
@@ -111,28 +115,18 @@ import org.xml.sax.SAXException;
  * connectors.
  */
 public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
-
     private String connectorName;
-
-    private static final float SLEEP_TIMER_PROGRESSION_FACTOR = 0.5f;
-
+//    private static final float SLEEP_TIMER_PROGRESSION_FACTOR = 0.5f;
     private String repoLocation;
-
     private MediationLibraryAdminServiceStub mediationLibraryAdminServiceStub;
-
-    protected Properties connectorProperties;
-
     private String pathToProxiesDirectory;
-
     private String pathToRequestsDirectory;
-
     private String pathToSequencesDirectory;
-
     protected String proxyUrl;
-
     protected String pathToResourcesDirectory;
-
     protected static final int MULTIPART_TYPE_RELATED = 100001;
+    protected Properties connectorProperties;
+    protected String proxyDirectoryInProduct;
 
     /**
      * Set up the integration test environment.
@@ -141,7 +135,17 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * @throws Exception
      */
     protected void init(String connectorName) throws Exception {
-        super.init();
+//        super.init();
+        this.axis2Client = new StockQuoteClient();
+        this.context = new AutomationContext();
+        this.contextUrls = this.context.getContextUrls();
+//        this.sessionCookie = this.login(this.context);
+        this.esbUtils = new ESBTestCaseUtils();
+        this. proxyDirectoryInProduct = System.getProperty("carbon.home") + "/repository/deployment/server/synapse-configs/default/proxy-services";
+        File proxyDirectoryInProductAsFile = new File(proxyDirectoryInProduct);
+//        this.tenantInfo = this.context.getContextTenant();
+//        this.userInfo = this.tenantInfo.getContextUser();
+
         ConfigurationContextProvider configurationContextProvider = ConfigurationContextProvider.getInstance();
         ConfigurationContext cc = configurationContextProvider.getConfigurationContext();
 
@@ -154,28 +158,28 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
             repoLocation = System.getProperty("connector_repo").replace("/", "/");
         }
 
-        uploadConnector(repoLocation, connectorName);
+//        uploadConnector(repoLocation, connectorName);
 
         // Connector file name comes with version,however mediation process only with name.
         connectorName = connectorName.split("-")[0];
         this.connectorName = connectorName;
 
-        byte maxAttempts = 3;
-        int sleepTimer = 30000;
-        for (byte attemptCount = 0; attemptCount < maxAttempts; attemptCount++) {
-            log.info("Sleeping for " + sleepTimer / 1000 + " seconds for connector to upload.");
-            Thread.sleep(sleepTimer);
-
-            String[] libraries = mediationLibraryAdminServiceStub.getAllLibraries();
-            if (Arrays.asList(libraries).contains("{org.wso2.carbon.connector}" + connectorName)) {
-                break;
-            } else {
-                log.info("Connector upload incomplete. Waiting...");
-                sleepTimer *= SLEEP_TIMER_PROGRESSION_FACTOR;
-            }
-        }
-        updateConnectorStatus("{org.wso2.carbon.connector}" + connectorName, connectorName,
-                "org.wso2.carbon.connector", "enabled");
+//        byte maxAttempts = 3;
+//        int sleepTimer = 30000;
+//        for (byte attemptCount = 0; attemptCount < maxAttempts; attemptCount++) {
+//            log.info("Sleeping for " + sleepTimer / 1000 + " seconds for connector to upload.");
+//            Thread.sleep(sleepTimer);
+//
+//            String[] libraries = mediationLibraryAdminServiceStub.getAllLibraries();
+//            if (Arrays.asList(libraries).contains("{org.wso2.carbon.connector}" + connectorName)) {
+//                break;
+//            } else {
+//                log.info("Connector upload incomplete. Waiting...");
+//                sleepTimer *= SLEEP_TIMER_PROGRESSION_FACTOR;
+//            }
+//        }
+//        updateConnectorStatus("{org.wso2.carbon.connector}" + connectorName, connectorName,
+//                "org.wso2.carbon.connector", "enabled");
 
         connectorProperties = getConnectorConfigProperties(connectorName);
         String resourceLocation = FrameworkPathUtil.getSystemResourceLocation();
@@ -185,15 +189,20 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
 
         File folder = new File(pathToProxiesDirectory);
         File[] listOfFiles = folder.listFiles();
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile()) {
-                String fileName = listOfFiles[i].getName();
-                if (fileName.endsWith(".xml") || fileName.endsWith(".XML")) {
-                    addProxyService(esbUtils.loadResource(
-                            connectorProperties.getProperty("proxyDirectoryRelativePath") + fileName));
-                }
-            }
-        }
+//        for (int i = 0; i < listOfFiles.length; i++) {
+//            if (listOfFiles[i].isFile()) {
+//                String fileName = listOfFiles[i].getName();
+//                if (fileName.endsWith(".xml") || fileName.endsWith(".XML")) {
+//                    try {
+//                        FileUtils.copyFileToDirectory(listOfFiles[i], proxyDirectoryInProductAsFile);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+////                    addProxyService(esbUtils.loadResource(
+////                            connectorProperties.getProperty("proxyDirectoryRelativePath") + fileName));
+//                }
+//            }
+//        }
         String sequenceDirectoryRelativePath = connectorProperties.getProperty("sequenceDirectoryRelativePath");
         // if sequence directory relative path is available in properties, add sequences to ESB
         if (sequenceDirectoryRelativePath != null && !sequenceDirectoryRelativePath.isEmpty()) {
@@ -405,9 +414,9 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      *
      * @throws Exception
      */
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = false)
     public void cleanUpEsb() throws Exception {
-        deleteProxyService(connectorName);
+//        deleteProxyService(connectorName);
     }
 
     /**
