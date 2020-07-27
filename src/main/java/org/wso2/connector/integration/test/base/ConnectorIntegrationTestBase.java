@@ -132,7 +132,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * @throws Exception
      */
     protected void init(String connectorName) throws Exception {
-        super.init();
+//        super.init();
         this.axis2Client = new StockQuoteClient();
         this.context = new AutomationContext();
         this.contextUrls = this.context.getContextUrls();
