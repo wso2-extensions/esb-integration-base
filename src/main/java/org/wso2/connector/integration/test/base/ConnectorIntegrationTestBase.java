@@ -84,6 +84,10 @@ import org.apache.axis2.context.ConfigurationContext;
 import org.apache.axis2.context.MessageContext;
 import org.apache.axis2.transport.TransportUtils;
 import org.apache.axis2.wsdl.WSDLConstants;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.jaxen.JaxenException;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -128,6 +132,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * @throws Exception
      */
     protected void init(String connectorName) throws Exception {
+        super.init();
         this.axis2Client = new StockQuoteClient();
         this.context = new AutomationContext();
         this.contextUrls = this.context.getContextUrls();
@@ -148,6 +153,8 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         // Connector file name comes with version,however mediation process only with name.
         connectorName = connectorName.split("-")[0];
         this.connectorName = connectorName;
+//        updateConnectorStatus("{org.wso2.carbon.connector}" + connectorName, connectorName,
+//                "org.wso2.carbon.connector", "enabled");
 
         connectorProperties = getConnectorConfigProperties(connectorName);
         String resourceLocation = FrameworkPathUtil.getSystemResourceLocation();
@@ -733,13 +740,31 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
             final Map<String, String> parametersMap, final String action, final String xpathHeaderExp,
             final String xpathBodyExp) throws XMLStreamException, IOException, JaxenException {
 
-        OMElement requestEnvelope = AXIOMUtil.stringToOM(loadRequestFromFile(soapRequestFileName, parametersMap));
-        OperationClient mepClient =
-                buildMEPClient(new EndpointReference(endpoint), requestEnvelope, action, xpathHeaderExp, xpathBodyExp);
+//        OMElement requestEnvelope = AXIOMUtil.stringToOM(loadRequestFromFile(soapRequestFileName, parametersMap));
+//        OperationClient mepClient =
+//                buildMEPClient(new EndpointReference(endpoint), requestEnvelope, action, xpathHeaderExp, xpathBodyExp);
+//
+//        mepClient.execute(true);
+//
+//        return mepClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE).getEnvelope();
 
-        mepClient.execute(true);
+        PostMethod post = new PostMethod(endpoint);
+        String request = loadRequestFromFile(soapRequestFileName, parametersMap);
+        RequestEntity lEntity = new StringRequestEntity(request, "text/xml", "utf-8");
+        post.setRequestEntity(lEntity);
+        post.setRequestHeader("SOAPAction", action);
+        HttpClient httpClient = new HttpClient();
+        try {
+            int result = httpClient.executeMethod(post);
+            String responseBody = post.getResponseBodyAsString();
+            log.info("Response Status: " + result);
+            log.info("Response Body: "+ responseBody);
+            SOAPEnvelopeWrapper responseWrapper = new SOAPEnvelopeWrapper(responseBody);
+            return responseWrapper;
+        } finally {
+            post.releaseConnection();
+        }
 
-        return mepClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE).getEnvelope();
     }
 
     /**
@@ -777,6 +802,26 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         mepClient.execute(true);
         return mepClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE).getEnvelope();
     }
+
+//    protected String sendSOAPRequestWithApacheHTTPClient(final String endpoint, final String soapRequestFileName,
+//                                                         final Map<String, String> parametersMap,
+//                                                         final String action) throws IOException {
+//        PostMethod post = new PostMethod(endpoint);
+//        String request = loadRequestFromFile(soapRequestFileName, parametersMap);
+//        RequestEntity lEntity = new StringRequestEntity(request, "text/xml", "utf-8");
+//        post.setRequestEntity(lEntity);
+//        post.setRequestHeader("SOAPAction", action);
+//        HttpClient httpClient = new HttpClient();
+//        try {
+//            int result = httpClient.executeMethod(post);
+//            String responseBody = post.getResponseBodyAsString();
+//            log.info("Response Status: " + result);
+//            log.info("Response Body: "+ responseBody);
+//            return responseBody;
+//        } finally {
+//            post.releaseConnection();
+//        }
+//    }
 
     /**
      * Send HTTP request using {@link HttpURLConnection} in JSON format to return {@link InputStream}.
@@ -998,7 +1043,7 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * @return String contents of the file.
      * @throws IOException Thrown on inability to read from the file.
      */
-    private String loadRequestFromFile(String requestFileName, Map<String, String> parametersMap) throws IOException {
+    protected String loadRequestFromFile(String requestFileName, Map<String, String> parametersMap) throws IOException {
 
         String requestFilePath;
         String requestData;
