@@ -740,31 +740,13 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
             final Map<String, String> parametersMap, final String action, final String xpathHeaderExp,
             final String xpathBodyExp) throws XMLStreamException, IOException, JaxenException {
 
-//        OMElement requestEnvelope = AXIOMUtil.stringToOM(loadRequestFromFile(soapRequestFileName, parametersMap));
-//        OperationClient mepClient =
-//                buildMEPClient(new EndpointReference(endpoint), requestEnvelope, action, xpathHeaderExp, xpathBodyExp);
-//
-//        mepClient.execute(true);
-//
-//        return mepClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE).getEnvelope();
+        OMElement requestEnvelope = AXIOMUtil.stringToOM(loadRequestFromFile(soapRequestFileName, parametersMap));
+        OperationClient mepClient =
+                buildMEPClient(new EndpointReference(endpoint), requestEnvelope, action, xpathHeaderExp, xpathBodyExp);
 
-        PostMethod post = new PostMethod(endpoint);
-        String request = loadRequestFromFile(soapRequestFileName, parametersMap);
-        RequestEntity lEntity = new StringRequestEntity(request, "text/xml", "utf-8");
-        post.setRequestEntity(lEntity);
-        post.setRequestHeader("SOAPAction", action);
-        HttpClient httpClient = new HttpClient();
-        try {
-            int result = httpClient.executeMethod(post);
-            String responseBody = post.getResponseBodyAsString();
-            log.info("Response Status: " + result);
-            log.info("Response Body: "+ responseBody);
-            SOAPEnvelopeWrapper responseWrapper = new SOAPEnvelopeWrapper(responseBody);
-            return responseWrapper;
-        } finally {
-            post.releaseConnection();
-        }
+        mepClient.execute(true);
 
+        return mepClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE).getEnvelope();
     }
 
     /**
@@ -803,25 +785,25 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         return mepClient.getMessageContext(WSDLConstants.MESSAGE_LABEL_IN_VALUE).getEnvelope();
     }
 
-//    protected String sendSOAPRequestWithApacheHTTPClient(final String endpoint, final String soapRequestFileName,
-//                                                         final Map<String, String> parametersMap,
-//                                                         final String action) throws IOException {
-//        PostMethod post = new PostMethod(endpoint);
-//        String request = loadRequestFromFile(soapRequestFileName, parametersMap);
-//        RequestEntity lEntity = new StringRequestEntity(request, "text/xml", "utf-8");
-//        post.setRequestEntity(lEntity);
-//        post.setRequestHeader("SOAPAction", action);
-//        HttpClient httpClient = new HttpClient();
-//        try {
-//            int result = httpClient.executeMethod(post);
-//            String responseBody = post.getResponseBodyAsString();
-//            log.info("Response Status: " + result);
-//            log.info("Response Body: "+ responseBody);
-//            return responseBody;
-//        } finally {
-//            post.releaseConnection();
-//        }
-//    }
+    protected String sendSOAPRequestWithApacheHTTPClient(final String endpoint, final String soapRequestFileName,
+                                                         final Map<String, String> parametersMap,
+                                                         final String action) throws IOException {
+        PostMethod post = new PostMethod(endpoint);
+        String request = loadRequestFromFile(soapRequestFileName, parametersMap);
+        RequestEntity lEntity = new StringRequestEntity(request, "text/xml", "utf-8");
+        post.setRequestEntity(lEntity);
+        post.setRequestHeader("SOAPAction", action);
+        HttpClient httpClient = new HttpClient();
+        try {
+            int result = httpClient.executeMethod(post);
+            String responseBody = post.getResponseBodyAsString();
+            log.info("Response Status: " + result);
+            log.info("Response Body: "+ responseBody);
+            return responseBody;
+        } finally {
+            post.releaseConnection();
+        }
+    }
 
     /**
      * Send HTTP request using {@link HttpURLConnection} in JSON format to return {@link InputStream}.
