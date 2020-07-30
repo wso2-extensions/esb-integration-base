@@ -30,44 +30,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.wso2.carbon.automation</groupId>
-            <artifactId>org.wso2.carbon.automation.extensions</artifactId>
-            <version>${automation.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.jmeter</groupId>
-                    <artifactId>ApacheJMeter</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.jmeter</groupId>
-                    <artifactId>ApacheJMeter_core</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.carbon.automationutils</groupId>
-            <artifactId>org.wso2.carbon.integration.common.admin.client</artifactId>
-            <version>${automation.framework.utils.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.carbon.automationutils</groupId>
-            <artifactId>org.wso2.carbon.integration.common.extensions</artifactId>
-            <version>${automation.framework.utils.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.carbon.automationutils</groupId>
-            <artifactId>org.wso2.carbon.integration.common.utils</artifactId>
-            <version>${automation.framework.utils.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.carbon.automationutils</groupId>
-            <artifactId>org.wso2.carbon.integration.common.tests</artifactId>
-            <version>${automation.framework.utils.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.wso2.carbon.mediation</groupId>
             <artifactId>org.wso2.carbon.connector.core</artifactId>
             <version>${carbon.mediation.version}</version>
@@ -88,12 +50,6 @@
             <version>${carbon.kernel.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.wso2.carbon.automation</groupId>
-            <artifactId>org.wso2.carbon.automation.test.utils</artifactId>
-            <version>${automation.framework.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.json.wso2</groupId>
             <artifactId>json</artifactId>
             <version>${json.version}</version>
@@ -107,11 +63,6 @@
             <groupId>org.wso2.carbon.mediation</groupId>
             <artifactId>org.wso2.carbon.mediation.library.stub</artifactId>
             <version>${carbon.mediation.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.carbon.automation</groupId>
-            <artifactId>org.wso2.carbon.automation.engine</artifactId>
-            <version>${automation.framework.version}</version>
         </dependency>
     </dependencies>
     <scm>
@@ -223,8 +174,6 @@
         <emma.version>2.1.5320</emma.version>
         <json.version>2.0.0.wso2v1</json.version>
         <testng.version>6.1.1</testng.version>
-        <automation.framework.version>4.4.3</automation.framework.version>
-        <automation.framework.utils.version>4.4.2</automation.framework.utils.version>
         <product.ei.version>6.1.1</product.ei.version>
     </properties>
     <pluginRepositories>
