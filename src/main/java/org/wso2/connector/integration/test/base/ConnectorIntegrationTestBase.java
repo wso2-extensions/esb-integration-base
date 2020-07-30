@@ -132,7 +132,6 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
      * @throws Exception
      */
     protected void init(String connectorName) throws Exception {
-//        super.init();
         this.axis2Client = new StockQuoteClient();
         this.context = new AutomationContext();
         this.contextUrls = this.context.getContextUrls();
@@ -153,8 +152,6 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         // Connector file name comes with version,however mediation process only with name.
         connectorName = connectorName.split("-")[0];
         this.connectorName = connectorName;
-//        updateConnectorStatus("{org.wso2.carbon.connector}" + connectorName, connectorName,
-//                "org.wso2.carbon.connector", "enabled");
 
         connectorProperties = getConnectorConfigProperties(connectorName);
         String resourceLocation = FrameworkPathUtil.getSystemResourceLocation();
