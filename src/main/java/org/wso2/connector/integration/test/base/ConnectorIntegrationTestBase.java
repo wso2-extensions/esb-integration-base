@@ -135,7 +135,6 @@ public abstract class ConnectorIntegrationTestBase extends ESBIntegrationTest {
         this.axis2Client = new StockQuoteClient();
         this.context = new AutomationContext();
         this.contextUrls = this.context.getContextUrls();
-        this.esbUtils = new ESBTestCaseUtils();
 
         ConfigurationContextProvider configurationContextProvider = ConfigurationContextProvider.getInstance();
         ConfigurationContext cc = configurationContextProvider.getConfigurationContext();
